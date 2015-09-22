@@ -1,5 +1,6 @@
 ﻿using System;
 using MathNet.Numerics.LinearAlgebra;
+using UnityEngine;
 
 namespace AutonomyTestbed.Fusion
 {
@@ -12,27 +13,44 @@ namespace AutonomyTestbed.Fusion
             RBE
         };
 
-        public static void Convert(Type fromType, Vector fromVector, Type toType, out Vector toVector)
+        // This function converts vectors between locations and coordiante frames
+        public static Vector Convert(GameObject fromLocation, Type fromType, Vector fromVector,
+            GameObject toLocation, Type toType)
         {
             // Convert the vector
             switch (fromType)
             {
                 case Type.ENU:
-                    toVector = ConvertENUVector(fromVector, toType);
-                    break;
+                    switch (toType)
+                    {
+                        case Type.ENU: // From ENU to ENU
+                            return fromVector - ComputeENUDisplacement(fromLocation, toLocation);
+                        case Type.RBE: // From ENU to RBE
+                            return EnuToRbe.ConvertVector(fromVector - ComputeENUDisplacement(fromLocation, toLocation));
+                        default: // Unrecognized
+                            return null;
+                    }
                 case Type.RBE:
-                    toVector = ConvertRBEVector(fromVector, toType);
-                    break;
-                default:
-                    toVector = null;
-                    break;
+                    switch (toType)
+                    {
+                        case Type.ENU: // From RBE to ENU
+                            return RbeToEnu.ConvertVector(fromVector) - ComputeENUDisplacement(fromLocation, toLocation);
+                        case Type.RBE: // From RBE to RBE
+                            return EnuToRbe.ConvertVector(RbeToEnu.ConvertVector(fromVector) - ComputeENUDisplacement(fromLocation, toLocation));
+                        default: // Unrecognized
+                            return null;
+                    }
+                default: // Unrecognized
+                    return null;
             }
         }
 
-        public static void Convert(Type fromType, Vector fromVector, Matrix fromCovariance, Type toType, out Vector toVector, out Matrix toCovariance, out Matrix fromToJacobian)
+        // This function converts 
+        public static void Convert(GameObject fromLocation, Type fromType, Vector fromVector, Matrix fromCovariance,
+            GameObject toLocation, Type toType, out Vector toVector, out Matrix toCovariance, out Matrix fromToJacobian)
         {
             // First convert the vector
-            Convert(fromType, fromVector, toType, out toVector);
+            Convert(fromLocation, fromType, fromVector, toLocation, toType, out toVector);
 
             // Get the Jacobian
             switch (fromType)
@@ -51,41 +69,10 @@ namespace AutonomyTestbed.Fusion
             // Convert covariance matrix
             Matrix fromToJacobianT = fromToJacobian.Clone();
             fromToJacobianT.Transpose();
-            toCovariance = fromToJacobian * fromCovariance * fromToJacobianT;        
+            toCovariance = fromToJacobian * fromCovariance * fromToJacobianT;
         }
 
-
-        #region Vector Conversion
-        private static Vector ConvertENUVector(Vector fromVector, Type toType)
-        {
-            // Switch on to type
-            switch (toType)
-            {
-                case Type.ENU:
-                    return fromVector;
-                case Type.RBE:
-                    return EnuToRbe.ConvertVector(fromVector); 
-                default:
-                    return null;
-            }
-        }
-
-        private static Vector ConvertRBEVector(Vector fromVector, Type toType)
-        {
-            // Switch on to type
-            switch (toType)
-            {
-                case Type.ENU:
-                    return RbeToEnu.ConvertVector(fromVector);
-                case Type.RBE:
-                    return fromVector;
-                default:
-                    return null;
-            }
-        }
-        #endregion
-
-        #region Jacobian Computation
+        #region Private Jacobian Computation
         private static Matrix ComputeFromENUJacobian(Vector fromVector, Type toType)
         {
             // Switch on to type
@@ -115,5 +102,20 @@ namespace AutonomyTestbed.Fusion
         }
         #endregion
 
+        #region PrivateHelperFunctions
+        // Note: Be very careful since for the first time we are relating Unity to measurement/track units/scales
+        private static Vector ComputeENUDisplacement(GameObject fromLocation, GameObject toLocation)
+        {
+            // Compute displacement in Unity coordinates
+            Vector3 displacementUnity = toLocation.transform.position - fromLocation.transform.position;
+
+            // Populate a vector with displacement in ENU
+            Vector displacementENU = new Vector(3);
+            displacementENU[0] = displacementUnity.x;
+            displacementENU[1] = displacementUnity.z; // Note: Y and Z purposely swapped
+            displacementENU[2] = displacementUnity.y; // Note: Y and Z purposely swapped
+            return displacementENU;
+        }
+        #endregion
     }
 }

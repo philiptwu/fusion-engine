@@ -7,7 +7,6 @@ using MathNet.Numerics.LinearAlgebra;
 public class FusionEngine : MonoBehaviour {
 
     // Engine properties
-    public int id;
     public float updatePeriodSec;
     private float timeSinceLastUpdateSec;
 
@@ -16,7 +15,8 @@ public class FusionEngine : MonoBehaviour {
     public Dictionary<ulong, GaussianTrack> trackDatabase;
 
 	// Use this for initialization
-	void Start () {
+	void Start () 
+    {
         // Initialize data structures
         unprocessedMeasurements = new List<GaussianMeasurement>();
         trackDatabase = new Dictionary<ulong, GaussianTrack>();
@@ -26,16 +26,12 @@ public class FusionEngine : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update () 
+    {
 	    // Check if it is time to perform an udpate
         timeSinceLastUpdateSec += Time.deltaTime;
         if (timeSinceLastUpdateSec >= updatePeriodSec)
         {
-            // Coordinate transform measurement into tracker frame
-            // Note: An alternate design can instead transform tracks
-            // to the measurement frame
-
-
             // Run associator for each measurement
 
 
@@ -50,9 +46,14 @@ public class FusionEngine : MonoBehaviour {
         }
 	}
 
+    // Used by external code to add to list of unprocessed measurements
+    // Do not try to modify the list directly
     public void AddMeasurement(GaussianMeasurement measurement)
     {
-        // Add to the list of unprocessed
-        unprocessedMeasurements.Add(measurement);
+        // Add to the list of unprocessed, can't add any when 
+        lock (unprocessedMeasurements)
+        {
+            unprocessedMeasurements.Add(measurement);
+        }
     }
 }
