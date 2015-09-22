@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using AutonomyTestbed.Fusion;
+using MathNet.Numerics.LinearAlgebra;
 
 public class FusionEngine : MonoBehaviour {
 
@@ -11,10 +12,16 @@ public class FusionEngine : MonoBehaviour {
     private float timeSinceLastUpdateSec;
 
     // Lists
-    public Dictionary<int id, GaussianTrack> trackDatabase;
+    public List<GaussianMeasurement> unprocessedMeasurements;
+    public Dictionary<ulong, GaussianTrack> trackDatabase;
 
 	// Use this for initialization
 	void Start () {
+        // Initialize data structures
+        unprocessedMeasurements = new List<GaussianMeasurement>();
+        trackDatabase = new Dictionary<ulong, GaussianTrack>();
+
+        // Reset time since last update
         timeSinceLastUpdateSec = 0.0f;
 	}
 	
@@ -24,6 +31,11 @@ public class FusionEngine : MonoBehaviour {
         timeSinceLastUpdateSec += Time.deltaTime;
         if (timeSinceLastUpdateSec >= updatePeriodSec)
         {
+            // Coordinate transform measurement into tracker frame
+            // Note: An alternate design can instead transform tracks
+            // to the measurement frame
+
+
             // Run associator for each measurement
 
 
@@ -38,8 +50,9 @@ public class FusionEngine : MonoBehaviour {
         }
 	}
 
-    public void AddMeasurement(GaussianVector measuremnt)
+    public void AddMeasurement(GaussianMeasurement measurement)
     {
-        // Add to the associator
+        // Add to the list of unprocessed
+        unprocessedMeasurements.Add(measurement);
     }
 }
