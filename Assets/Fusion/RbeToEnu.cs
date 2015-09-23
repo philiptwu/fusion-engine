@@ -1,5 +1,8 @@
 ﻿using System;
 using MathNet.Numerics.LinearAlgebra;
+#if(UNITY_STANDALONE)
+using UnityEngine;
+#endif
 
 namespace AutonomyTestbed.Fusion
 {
@@ -56,6 +59,11 @@ namespace AutonomyTestbed.Fusion
             else
             {
                 // Unsupported size
+                #if(UNITY_STANDALONE)
+                Debug.LogError("RbeToEnu::ConvertVector(): Unsupported input size");
+                #else
+                Console.WriteLine("RbeToEnu::ConvertVector(): Unsupported input size");
+                #endif
                 return null;
             }
         }
@@ -155,6 +163,11 @@ namespace AutonomyTestbed.Fusion
             else
             {
                 // Unsupported size
+                #if(UNITY_STANDALONE)
+                Debug.LogError("RbeToEnu::ConvertVector(): Unsupported input size");
+                #else
+                Console.WriteLine("RbeToEnu::ConvertVector(): Unsupported input size");
+                #endif
                 return null;
             }
         }

@@ -1,6 +1,8 @@
 ﻿using System;
 using MathNet.Numerics.LinearAlgebra;
+#if(UNITY_STANDALONE)
 using UnityEngine;
+#endif
 
 namespace AutonomyTestbed.Fusion
 {
@@ -9,113 +11,126 @@ namespace AutonomyTestbed.Fusion
         // Register types
         public enum Type
         {
+            UNITY,
             ENU,
             RBE
         };
 
         // This function converts vectors between locations and coordiante frames
-        public static Vector Convert(GameObject fromLocation, Type fromType, Vector fromVector,
-            GameObject toLocation, Type toType)
+        public static void Convert(Vector fromUnityReference, Type fromType, Vector fromVector,
+            Vector toUnityReference, Type toType, out Vector toVector, out Matrix fromToJacobian)
         {
+            // Assign default values to output
+            toVector = null;
+            fromToJacobian = null;
+            
+            // Determine length of input vector
+            int N = fromVector.Length;
+            if (fromUnityReference.Length != N || toUnityReference.Length != N)
+            {
+                // Inconsistent length error
+                #if(UNITY_STANDALONE)
+                Debug.LogError("Coordinate::Convert(): Inconsistent length of input vectors, cannot convert");
+                return;
+                #else
+                Console.WriteLine("Coordinate::Convert(): Inconsistent length of input vectors, cannot convert");
+                return;
+                #endif
+            }
+            if(N != 3 && N != 6)
+            {
+                #if(UNITY_STANDALONE)
+                Debug.LogError("Coordinate::Convert(): Length of input vector not supported, cannot convert");
+                return;
+                #else
+                Console.WriteLine("Coordinate::Convert(): Length of input vector not supported, cannot convert");
+                return;
+                #endif            
+            }
+
             // Convert the vector
             switch (fromType)
             {
+                case Type.UNITY:
+                    switch (toType)
+                    {
+                        case Type.UNITY: // UNITY to UNITY
+                            {
+                                toVector = fromVector.Clone();
+                                fromToJacobian = Matrix.Identity(N, N);
+                                break;
+                            }
+                        case Type.ENU: // UNITY to ENU
+                            {
+                                toVector = UnityToEnu.ConvertVector(fromVector, toUnityReference);
+                                fromToJacobian = UnityToEnu.ComputeJacobian(fromVector);
+                                break;
+                            }
+                        case Type.RBE: // UNITY to RBE
+                            {
+                                Vector toEnu = UnityToEnu.ConvertVector(fromVector, toUnityReference);
+                                toVector = EnuToRbe.ConvertVector(toEnu);
+                                fromToJacobian = EnuToRbe.ComputeJacobian(toEnu) * UnityToEnu.ComputeJacobian(fromVector);
+                                break;
+                            }
+                    }
+                    break;
                 case Type.ENU:
                     switch (toType)
                     {
-                        case Type.ENU: // From ENU to ENU
-                            return fromVector - ComputeENUDisplacement(fromLocation, toLocation);
-                        case Type.RBE: // From ENU to RBE
-                            return EnuToRbe.ConvertVector(fromVector - ComputeENUDisplacement(fromLocation, toLocation));
-                        default: // Unrecognized
-                            return null;
+                        case Type.UNITY: // ENU to UNITY
+                            {
+                                toVector = EnuToUnity.ConvertVector(fromVector, fromUnityReference);
+                                fromToJacobian = EnuToUnity.ComputeJacobian(fromVector);
+                                break;
+                            }
+                        case Type.ENU: // ENU to ENU
+                            {
+                                Vector unity = EnuToUnity.ConvertVector(fromVector, fromUnityReference);
+                                toVector = UnityToEnu.ConvertVector(unity, toUnityReference);
+                                fromToJacobian = UnityToEnu.ComputeJacobian(unity) * EnuToUnity.ComputeJacobian(fromVector);
+                                break;
+                            }
+                        case Type.RBE: // ENU to RBE
+                            {
+                                Vector unity = EnuToUnity.ConvertVector(fromVector, fromUnityReference);
+                                Vector toEnu = UnityToEnu.ConvertVector(unity, toUnityReference);
+                                toVector = EnuToRbe.ConvertVector(toEnu);
+                                fromToJacobian = EnuToRbe.ComputeJacobian(toEnu) * UnityToEnu.ComputeJacobian(unity) * EnuToUnity.ComputeJacobian(fromVector);
+                                break;
+                            }
                     }
+                    break;
                 case Type.RBE:
                     switch (toType)
                     {
-                        case Type.ENU: // From RBE to ENU
-                            return RbeToEnu.ConvertVector(fromVector) - ComputeENUDisplacement(fromLocation, toLocation);
-                        case Type.RBE: // From RBE to RBE
-                            return EnuToRbe.ConvertVector(RbeToEnu.ConvertVector(fromVector) - ComputeENUDisplacement(fromLocation, toLocation));
-                        default: // Unrecognized
-                            return null;
+                        case Type.UNITY: // RBE to UNITY
+                            {
+                                Vector fromEnu = RbeToEnu.ConvertVector(fromVector);
+                                toVector = EnuToUnity.ConvertVector(fromEnu, fromUnityReference);
+                                fromToJacobian = EnuToUnity.ComputeJacobian(fromEnu) * RbeToEnu.ComputeJacobian(fromVector);
+                                break;
+                            }
+                        case Type.ENU: // RBE to ENU
+                            {
+                                Vector fromEnu = RbeToEnu.ConvertVector(fromVector);
+                                Vector unity = EnuToUnity.ConvertVector(fromEnu, fromUnityReference);
+                                toVector = UnityToEnu.ConvertVector(unity, toUnityReference);
+                                fromToJacobian = UnityToEnu.ComputeJacobian(unity) * EnuToUnity.ComputeJacobian(fromEnu) * RbeToEnu.ComputeJacobian(fromVector);
+                                break;
+                            }
+                        case Type.RBE: // RBE to RBE
+                            {
+                                Vector fromEnu = RbeToEnu.ConvertVector(fromVector);
+                                Vector unity = EnuToUnity.ConvertVector(fromEnu, fromUnityReference);
+                                Vector toEnu = UnityToEnu.ConvertVector(unity, toUnityReference);
+                                toVector = EnuToRbe.ConvertVector(toEnu);
+                                fromToJacobian = EnuToRbe.ComputeJacobian(toEnu) * UnityToEnu.ComputeJacobian(unity) * EnuToUnity.ComputeJacobian(fromEnu) * RbeToEnu.ComputeJacobian(fromVector);
+                                break;
+                            }
                     }
-                default: // Unrecognized
-                    return null;
-            }
-        }
-
-        // This function converts 
-        public static void Convert(GameObject fromLocation, Type fromType, Vector fromVector, Matrix fromCovariance,
-            GameObject toLocation, Type toType, out Vector toVector, out Matrix toCovariance, out Matrix fromToJacobian)
-        {
-            // First convert the vector
-            Convert(fromLocation, fromType, fromVector, toLocation, toType, out toVector);
-
-            // Get the Jacobian
-            switch (fromType)
-            {
-                case Type.ENU:
-                    fromToJacobian = ComputeFromENUJacobian(fromVector, toType);
-                    break;
-                case Type.RBE:
-                    fromToJacobian = ComputeFromRBEJacobian(fromVector, toType);
-                    break;
-                default:
-                    fromToJacobian = null;
                     break;
             }
-
-            // Convert covariance matrix
-            Matrix fromToJacobianT = fromToJacobian.Clone();
-            fromToJacobianT.Transpose();
-            toCovariance = fromToJacobian * fromCovariance * fromToJacobianT;
         }
-
-        #region Private Jacobian Computation
-        private static Matrix ComputeFromENUJacobian(Vector fromVector, Type toType)
-        {
-            // Switch on to type
-            switch (toType)
-            {
-                case Type.ENU:
-                    return Matrix.Identity(fromVector.Length, fromVector.Length);
-                case Type.RBE:
-                    return EnuToRbe.ComputeJacobian(fromVector);
-                default:
-                    return null;
-            }
-        }
-
-        private static Matrix ComputeFromRBEJacobian(Vector fromVector, Type toType)
-        {
-            // Switch on to type
-            switch (toType)
-            {
-                case Type.ENU:
-                    return RbeToEnu.ComputeJacobian(fromVector);
-                case Type.RBE:
-                    return Matrix.Identity(fromVector.Length, fromVector.Length);
-                default:
-                    return null;
-            }
-        }
-        #endregion
-
-        #region PrivateHelperFunctions
-        // Note: Be very careful since for the first time we are relating Unity to measurement/track units/scales
-        private static Vector ComputeENUDisplacement(GameObject fromLocation, GameObject toLocation)
-        {
-            // Compute displacement in Unity coordinates
-            Vector3 displacementUnity = toLocation.transform.position - fromLocation.transform.position;
-
-            // Populate a vector with displacement in ENU
-            Vector displacementENU = new Vector(3);
-            displacementENU[0] = displacementUnity.x;
-            displacementENU[1] = displacementUnity.z; // Note: Y and Z purposely swapped
-            displacementENU[2] = displacementUnity.y; // Note: Y and Z purposely swapped
-            return displacementENU;
-        }
-        #endregion
     }
 }
