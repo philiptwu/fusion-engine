@@ -26,18 +26,9 @@ namespace AutonomyTestbed.Fusion
             
             // Determine length of input vector
             int N = fromVector.Length;
-            if (fromUnityReference.Length != N || toUnityReference.Length != N)
-            {
-                // Inconsistent length error
-                #if(UNITY_STANDALONE)
-                Debug.LogError("Coordinate::Convert(): Inconsistent length of input vectors, cannot convert");
-                return;
-                #else
-                Console.WriteLine("Coordinate::Convert(): Inconsistent length of input vectors, cannot convert");
-                return;
-                #endif
-            }
-            if(N != 3 && N != 6)
+            N = (fromUnityReference.Length < N) ? fromUnityReference.Length : N;
+            N = (toUnityReference.Length < N) ? toUnityReference.Length : N;
+            if (N != 3 && N != 6)
             {
                 #if(UNITY_STANDALONE)
                 Debug.LogError("Coordinate::Convert(): Length of input vector not supported, cannot convert");
@@ -45,7 +36,29 @@ namespace AutonomyTestbed.Fusion
                 #else
                 Console.WriteLine("Coordinate::Convert(): Length of input vector not supported, cannot convert");
                 return;
-                #endif            
+                #endif
+            }
+            else
+            {
+                // Make copies of vectors truncated to minimum length N
+                Vector temp = new Vector(N);
+                for (int i = 0; i < N; i++)
+                {
+                    temp[i] = fromUnityReference[i];
+                }
+                fromUnityReference = temp;
+                temp = new Vector(N);
+                for (int i = 0; i < N; i++)
+                {
+                    temp[i] = fromVector[i];
+                }
+                fromVector = temp;
+                temp = new Vector(N);
+                for (int i = 0; i < N; i++)
+                {
+                    temp[i] = toUnityReference[i];
+                }
+                toUnityReference = temp;
             }
 
             // Convert the vector

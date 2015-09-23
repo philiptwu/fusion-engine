@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
-using UnityEngine;
 
 // The track class holds state, time, and a list of unfused measurements
 // for processing by fusion/filter algorithms
@@ -12,7 +11,6 @@ namespace AutonomyTestbed.Fusion
     {
         // Identification
         public ulong trackID;
-        public GameObject creator;
         
         // Track information
         public GaussianVector gaussianVector;
@@ -20,29 +18,37 @@ namespace AutonomyTestbed.Fusion
         public DateTime dateTime;
 
         // Bookkeeping
-        public List<GaussianVector> associatedMeasurements;
+        public List<GaussianMeasurement> associatedMeasurements;
         public bool isInitialized;
 
         // Constructor 1: Uninitialized state 
-        public GaussianTrack(ulong trackID, GameObject creator)
+        public GaussianTrack(ulong trackID)
         {
             // Initialize associated measurements list
-            associatedMeasurements = new List<GaussianVector>();
+            associatedMeasurements = new List<GaussianMeasurement>();
 
             // Save identification information
             this.trackID = trackID;
-            this.creator = creator;
 
             // Not initialized
             isInitialized = false;
         }
 
         // Constructor 2: Caller specifies initial state
-        public GaussianTrack(ulong trackID, GameObject creator, GaussianVector initialState, Coordinate.Type coordinateType, DateTime dateTime)
-            : this(trackID, creator)
+        public GaussianTrack(ulong trackID, GaussianVector initialState, Coordinate.Type coordinateType, DateTime dateTime)
+            : this(trackID)
         {
             // Initialize using specified initial state
             Initialize(initialState, coordinateType, dateTime);
+        }
+
+        // Add to list
+        public void AddAssociatedMeasurement(GaussianMeasurement m)
+        {
+            lock (associatedMeasurements)
+            {
+                associatedMeasurements.Add(m);
+            }
         }
 
         // If the track is not already initialized, try to estimate using batch estimator.  Return initialization status.

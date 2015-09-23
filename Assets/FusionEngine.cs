@@ -14,12 +14,18 @@ public class FusionEngine : MonoBehaviour {
     public List<GaussianMeasurement> unprocessedMeasurements;
     public Dictionary<ulong, GaussianTrack> trackDatabase;
 
+    // Components
+    ChiSquareAssociator associator;
+
 	// Use this for initialization
 	void Start () 
     {
         // Initialize data structures
         unprocessedMeasurements = new List<GaussianMeasurement>();
         trackDatabase = new Dictionary<ulong, GaussianTrack>();
+
+        // Initialize associator
+        associator = new ChiSquareAssociator(this);
 
         // Reset time since last update
         timeSinceLastUpdateSec = 0.0f;
@@ -32,17 +38,24 @@ public class FusionEngine : MonoBehaviour {
         timeSinceLastUpdateSec += Time.deltaTime;
         if (timeSinceLastUpdateSec >= updatePeriodSec)
         {
-            // Run associator for each measurement
+            // Grab lock on track database
+            lock (trackDatabase)
+            {
+                // Step 1: Run associator for each measurement
+                lock (unprocessedMeasurements)
+                {
+                    associator.AssociateMeasurements();
+                }
+
+                // Step 2: Run filter on each track
 
 
-            // Run filter on each track
+                // Step 3: Run track management on each track
 
 
-            // Run track mgmt on each track
-
-
-            // Clear time since last update
-            timeSinceLastUpdateSec = 0.0f;
+                // Clear time since last update
+                timeSinceLastUpdateSec = 0.0f;
+            }
         }
 	}
 
