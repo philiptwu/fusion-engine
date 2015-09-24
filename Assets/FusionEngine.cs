@@ -5,8 +5,8 @@ using AutonomyTestbed.Fusion;
 using MathNet.Numerics.LinearAlgebra;
 
 // TODO LIST:
-// 1. M of N track initialization
-// 2. Test on Unity
+// 1. Test on Unity
+// 2. M of N track initialization
 // 3. Track management
 // 4. Cleanup / Unity-ify
 // 5. Generalize
@@ -21,7 +21,6 @@ public class FusionEngine : MonoBehaviour {
     public List<GaussianMeasurement> unprocessedMeasurements;
     public List<GaussianMeasurement> unassociatedMeasurements;
     public Dictionary<ulong, GaussianTrack> trackDatabase;
-    public List<GaussianProtoTrack> trackNursery;
     
     // Track ID bookkeeping
     private HashSet<ulong> usedTrackIDs;
@@ -29,35 +28,34 @@ public class FusionEngine : MonoBehaviour {
 
     // Components
     private ChiSquareAssociator associator;
+    private SingleTrackInitializer initializer;
     private ExtendedKalmanFilter ekf;
 
     // Models
     public StateTransitionModel stateTransitionModel;
     public ProcessNoiseModel processNoiseModel;
-    //public Dictionary<AutonomyTestbed.Fusion.Coordinate.Type,MeasurementModel> measurementModelDictionary;
 
 	// Use this for initialization
 	void Start () 
     {
-        // Initialize data structures
+        // Initialize databases
         unprocessedMeasurements = new List<GaussianMeasurement>();
+        unassociatedMeasurements = new List<GaussianMeasurement>();
         trackDatabase = new Dictionary<ulong, GaussianTrack>();
-        trackNursery = new List<GaussianProtoTrack>();
-
-        // Initialize associator
-        associator = new ChiSquareAssociator(this);
-
-        // Initialize dynamics models
-        stateTransitionModel = new ConstantVelocityModel();
-        processNoiseModel = new RandomAccelerationModel(2.0f);
-        
-        // Initialize filter
-        ekf = new ExtendedKalmanFilter(stateTransitionModel, processNoiseModel);
 
         // Initialize track ID bookkeeping
         usedTrackIDs = new HashSet<ulong>();
         availableTrackID = 0;
 
+        // Initialize components
+        associator = new ChiSquareAssociator(this);
+        initializer = new SingleTrackInitializer(this);
+        ekf = new ExtendedKalmanFilter(stateTransitionModel, processNoiseModel);
+
+        // Initialize models
+        stateTransitionModel = new ConstantVelocityModel();
+        processNoiseModel = new RandomAccelerationModel(2.0f);
+                
         // Reset time since last update
         timeSinceLastUpdateSec = 0.0f;
 	}
@@ -72,15 +70,17 @@ public class FusionEngine : MonoBehaviour {
             // Grab lock on track database
             lock (trackDatabase)
             {
-                // Step 1: Try to associate measurements to released tracks
-                lock (unprocessedMeasurements)
+                lock (unassociatedMeasurements)
                 {
-                    associator.Associate();
+                    // Step 1: Try to associate measurements to released tracks
+                    lock (unprocessedMeasurements)
+                    {
+                        associator.Associate();
+                    }
+
+                    // Step 2: Use unassociated measurements to try to update proto tracks
+                    initializer.InitializeTracks();
                 }
-
-                // Step 2: Use unassociated measurements to try to update proto tracks
-
-
                 // Step 3: Run track management on each released track
                 // Note: This step can be omitted for now
 
