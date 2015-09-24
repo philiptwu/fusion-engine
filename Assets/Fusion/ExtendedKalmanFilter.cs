@@ -10,14 +10,11 @@ namespace AutonomyTestbed.Fusion
         // Models
         public StateTransitionModel stateTransitionModel;
         public ProcessNoiseModel processNoiseModel;
-        public MeasurementModel measurementModel;
 
-        public ExtendedKalmanFilter(StateTransitionModel stateTransitionModel, ProcessNoiseModel processNoiseModel,
-            MeasurementModel measurementModel)
+        public ExtendedKalmanFilter(StateTransitionModel stateTransitionModel, ProcessNoiseModel processNoiseModel)
         {
             this.stateTransitionModel = stateTransitionModel;
             this.processNoiseModel = processNoiseModel;
-            this.measurementModel = measurementModel;
         }
 
         // Performs a Kalman update on track using measurement and overwrites track with new estimate
@@ -29,8 +26,10 @@ namespace AutonomyTestbed.Fusion
             predictedGaussianVector.covariance += Q;
 
             // Compute residual mean / covariance            
-            Vector y = measurement.gaussianVector.mean - measurementModel.Evaluate(predictedGaussianVector.mean, measurement.dateTime);
-            Matrix H = measurementModel.GetJacobian(predictedGaussianVector.mean, measurement.dateTime);
+            Vector hx;
+            Matrix H;
+            Coordinate.Convert(new Vector(3), Coordinate.Type.UNITY, predictedGaussianVector.mean, measurement.creatorUnityReference, measurement.coordinateType, out hx, out H);
+            Vector y = measurement.gaussianVector.mean - hx;
             Matrix HT = H.Clone();
             HT.Transpose();
             Matrix S = H * predictedGaussianVector.covariance * HT + measurement.gaussianVector.covariance;

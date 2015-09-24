@@ -42,11 +42,13 @@ namespace AutonomyTestbed.Fusion
                 double lowestChiSquareDistance = double.PositiveInfinity;
                 
                 // Try to associate to a track
-                foreach(GaussianTrack gt in fusionEngine.trackDatabase.values)
+                foreach(GaussianTrack gt in fusionEngine.trackDatabase.Values)
                 {
+                    // Only consider those that have chi square distances below threshold
                     double tempChiSquareDistance = Compute3DimChiSquareDistance(gm, gt);
                     if (tempChiSquareDistance <= chiSquareThreshold)
                     {
+                        // Keep track of best match
                         if (tempChiSquareDistance < lowestChiSquareDistance)
                         {
                             lowestChiSquareDistance = tempChiSquareDistance;
@@ -59,35 +61,12 @@ namespace AutonomyTestbed.Fusion
                 if (bestTrack != null)
                 {
                     // If a good association found to an existing track, add measurement to it
-                    bestTrack.AddAssociatedMeasurement(m);
+                    bestTrack.AssociateMeasurement(gm);
                 }
                 else
                 {
-                    // Try to associate to a track
-                    foreach (GaussianTrack gt in protoTrackList)
-                    {
-                        double tempChiSquareDistance = Compute3DimChiSquareDistance(gm, gt);
-                        if (tempChiSquareDistance <= chiSquareThreshold)
-                        {
-                            if (tempChiSquareDistance < lowestChiSquareDistance)
-                            {
-                                lowestChiSquareDistance = tempChiSquareDistance;
-                                bestTrack = gt;
-                            }
-                        }
-                    }
-
-                    // Evaluate association result
-                    if (bestTrack != null)
-                    {
-                        // If a good association found to a proto track, add measurement to it
-                        bestTrack.AddAssociatedMeasurement(m);
-                    }
-                    else
-                    {
-                        // If still not, then create a proto track from it and add to list
-                        protoTrackList.Add(new GaussianTrack());
-                    }
+                    // Otherwise, add to list of unassociated measurements
+                    fusionEngine.unassociatedMeasurements.Add(gm);
                 }
             }
 
