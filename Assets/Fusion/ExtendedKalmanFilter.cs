@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
+#if(UNITY_STANDALONE)
+using UnityEngine;
+#endif
 
 // The recursive estimator takes in measurements, a state + uncertainty, and computes a new state estimate + uncertainty
 namespace AutonomyTestbed.Fusion
@@ -27,19 +30,31 @@ namespace AutonomyTestbed.Fusion
 
             // Compute residual mean / covariance            
             Vector hx;
-            Matrix H;
-            Coordinate.Convert(new Vector(3), Coordinate.Type.UNITY, predictedGaussianVector.mean, measurement.creatorUnityReference, measurement.coordinateType, out hx, out H);
+            Matrix H33;
+            Coordinate.Convert(new Vector(3), Coordinate.Type.UNITY, predictedGaussianVector.mean, measurement.creatorUnityReference, measurement.coordinateType, out hx, out H33);
+            Matrix H = new Matrix(3, 6, 0);
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    H[i,j] = H33[i,j];
+                }
+            }
+            
+            // Compute innovation and Kalman gain
             Vector y = measurement.gaussianVector.mean - hx;
             Matrix HT = H.Clone();
             HT.Transpose();
             Matrix S = H * predictedGaussianVector.covariance * HT + measurement.gaussianVector.covariance;
-
-            // Compute Kalman gain
             Matrix K = S.SolveTranspose(predictedGaussianVector.covariance * HT);
 
             // Update state estimate
             int N = predictedGaussianVector.mean.Length;
-            predictedGaussianVector.covariance= (Matrix.Identity(N,N) - K*H)*predictedGaussianVector.covariance;
+            Debug.Log("K = (" + K.RowCount + "," + K.ColumnCount + ")");
+            Debug.Log("H = (" + H.RowCount + "," + H.ColumnCount + ")");
+            Debug.Log("I-KH = (" + (Matrix.Identity(N, N) - K * H).RowCount + "," + (Matrix.Identity(N, N) - K * H).ColumnCount + ")");
+            Debug.Log("P = (" + predictedGaussianVector.covariance.RowCount + "," + predictedGaussianVector.covariance.ColumnCount + ")");
+            predictedGaussianVector.covariance = (Matrix.Identity(N,N) - K*H) * predictedGaussianVector.covariance; // Problem
             predictedGaussianVector.mean = predictedGaussianVector.mean + (K * y.ToColumnMatrix()).GetColumnVector(0);
 
             // Write to the track

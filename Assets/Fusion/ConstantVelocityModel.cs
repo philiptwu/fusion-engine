@@ -5,7 +5,7 @@ namespace AutonomyTestbed.Fusion
 {
     public class ConstantVelocityModel : StateTransitionModel
     {
-        public Vector Evaluate(Vector state, DateTime stateTime, DateTime targetTime)
+        public override Vector Evaluate(Vector state, DateTime stateTime, DateTime targetTime)
         {
             // Compute dt
             TimeSpan ts = targetTime.Subtract(stateTime);
@@ -21,7 +21,7 @@ namespace AutonomyTestbed.Fusion
             return coasted;
         }
 
-        public Matrix GetJacobian(Vector state, DateTime stateTime, DateTime targetTime)
+        public override Matrix GetJacobian(Vector state, DateTime stateTime, DateTime targetTime)
         {
             // Compute dt
             TimeSpan ts = targetTime.Subtract(stateTime);

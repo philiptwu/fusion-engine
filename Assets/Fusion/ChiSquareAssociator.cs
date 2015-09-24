@@ -16,7 +16,7 @@ namespace AutonomyTestbed.Fusion
         private FusionEngine fusionEngine;
 
         // Internal storage
-        private List<GaussianTrack> protoTrackList;
+        //private List<GaussianTrack> protoTrackList;
 
         // Constructor
         public ChiSquareAssociator(FusionEngine fusionEngine)
@@ -28,7 +28,7 @@ namespace AutonomyTestbed.Fusion
             this.fusionEngine = fusionEngine;
 
             // Initialize internal storage
-            protoTrackList = new List<GaussianTrack>();
+            //protoTrackList = new List<GaussianTrack>();
         }
 
         // Associate measurements (lock assumed on unprocessedMeasurements and track database)

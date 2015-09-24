@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
 using System.Linq;
+#if(UNITY_STANDALONE)
+using UnityEngine;
+#endif
 
 // Note: Hard coded for 3 state unity inputs with constant velocity model
 namespace AutonomyTestbed.Fusion
@@ -77,11 +80,11 @@ namespace AutonomyTestbed.Fusion
                 g[3 * k + 2, 0] = convMean[2];
 
                 // Copy coverted measurement covariance to (3x3) block in R matrix
-                for (int i = 3 * k; i < 3 * k + 3; i++)
+                for (int i = 0; i < 3; i++)
                 {
-                    for (int j = 3 * k; j < 3 * k + 3; j++)
+                    for (int j = 0; j < 3; j++)
                     {
-                        R[i, j] = convCovariance[i, j];
+                        R[3*k + i, 3*k + j] = convCovariance[i, j];
                     }
                 }
             }

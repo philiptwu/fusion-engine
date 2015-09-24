@@ -14,7 +14,7 @@ namespace AutonomyTestbed.Fusion
             this.q = q;
         }
 
-        public Matrix Evaluate(Vector state, DateTime stateTime, DateTime targetTime)
+        public override Matrix Evaluate(Vector state, DateTime stateTime, DateTime targetTime)
         {
             // Compute dt
             TimeSpan ts = targetTime.Subtract(stateTime);

@@ -26,14 +26,14 @@ public class FusionEngine : MonoBehaviour {
     private HashSet<ulong> usedTrackIDs;
     private ulong availableTrackID;
 
+    // Models
+    public StateTransitionModel stateTransitionModel;
+    public ProcessNoiseModel processNoiseModel;
+
     // Components
     private ChiSquareAssociator associator;
     private SingleTrackInitializer initializer;
     private ExtendedKalmanFilter ekf;
-
-    // Models
-    public StateTransitionModel stateTransitionModel;
-    public ProcessNoiseModel processNoiseModel;
 
 	// Use this for initialization
 	void Start () 
@@ -47,14 +47,14 @@ public class FusionEngine : MonoBehaviour {
         usedTrackIDs = new HashSet<ulong>();
         availableTrackID = 0;
 
+        // Initialize models
+        stateTransitionModel = new ConstantVelocityModel();
+        processNoiseModel = new RandomAccelerationModel(2.0f);
+
         // Initialize components
         associator = new ChiSquareAssociator(this);
         initializer = new SingleTrackInitializer(this);
         ekf = new ExtendedKalmanFilter(stateTransitionModel, processNoiseModel);
-
-        // Initialize models
-        stateTransitionModel = new ConstantVelocityModel();
-        processNoiseModel = new RandomAccelerationModel(2.0f);
                 
         // Reset time since last update
         timeSinceLastUpdateSec = 0.0f;
@@ -98,6 +98,11 @@ public class FusionEngine : MonoBehaviour {
 
                 // Clear time since last update
                 timeSinceLastUpdateSec = 0.0f;
+
+                Debug.Log("******************************");
+                Debug.Log("Unprocessed Measurements: " + unprocessedMeasurements.Count);
+                Debug.Log("Unassociated Measurements: " + unassociatedMeasurements.Count);
+                Debug.Log("Tracks: " + trackDatabase.Values.Count);
             }
         }
 	}
