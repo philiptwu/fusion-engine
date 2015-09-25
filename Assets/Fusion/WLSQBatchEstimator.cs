@@ -60,19 +60,11 @@ namespace AutonomyTestbed.Fusion
                 Vector convMean;
                 Matrix convJacobian;
                 Coordinate.Convert(measurements[k].creatorUnityReference, measurements[k].coordinateType,
-                    measurements[k].gaussianVector.mean, new Vector(3), Coordinate.Type.UNITY,
+                    measurements[k].gaussianVector.mean, new Vector(3), Coordinate.Type.UNITY3,
                     out convMean, out convJacobian);
                 Matrix convJacobianT = convJacobian.Clone();
                 convJacobianT.Transpose();
-                Matrix measCovariance = new Matrix(3,3);
-                for(int i=0; i<3; i++)
-                {
-                    for(int j=0; j<3; j++)
-                    {
-                        measCovariance[i,j] = measurements[k].gaussianVector.covariance[i,j];
-                    }
-                }
-                Matrix convCovariance = convJacobian * measCovariance * convJacobianT;
+                Matrix convCovariance = convJacobian * measurements[k].gaussianVector.covariance * convJacobianT;
 
                 // Populate (3x1) block of g with converted measurement mean
                 g[3 * k, 0] = convMean[0]; 
@@ -100,7 +92,7 @@ namespace AutonomyTestbed.Fusion
 
             // Create a new track and return
             return new GaussianTrack(fusionEngine.RequestNewTrackID(), 
-                new GaussianVector(Xs, Ps), Coordinate.Type.UNITY, 
+                new GaussianVector(Xs, Ps), Coordinate.Type.UNITY6, 
                 measurements[N - 1].dateTime);
         }
     }

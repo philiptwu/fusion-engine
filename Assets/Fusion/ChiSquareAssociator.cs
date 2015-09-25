@@ -22,7 +22,10 @@ namespace AutonomyTestbed.Fusion
         public ChiSquareAssociator(FusionEngine fusionEngine)
         {
             // Threshold
-            chiSquareThreshold = 7.8147f; // for chi2inv(0.95,3)
+            //chiSquareThreshold =  7.8147f; // for chi2inv(0.95,3)
+            //chiSquareThreshold = 11.3449f; // for chi2inv(0.99,3)
+            chiSquareThreshold = 16.2662f; // for chi2inv(0.999,3)
+            //chiSquareThreshold = 21.1075f; // for chi2inv(0.9999,3)
 
             // Save pointer to the fusion engine
             this.fusionEngine = fusionEngine;
@@ -37,6 +40,9 @@ namespace AutonomyTestbed.Fusion
             // Copy from unprocessed measurements to unassociated and clear list
             foreach (GaussianMeasurement gm in fusionEngine.unprocessedMeasurements)
             {
+                Debug.Log("Measurement Mean: " + gm.gaussianVector.mean);
+                Debug.Log("Measurement Covar: " + gm.gaussianVector.covariance);
+
                 // Only take those that are gaussian measurements
                 GaussianTrack bestTrack = null;
                 double lowestChiSquareDistance = double.PositiveInfinity;
@@ -44,8 +50,13 @@ namespace AutonomyTestbed.Fusion
                 // Try to associate to a track
                 foreach(GaussianTrack gt in fusionEngine.trackDatabase.Values)
                 {
+                    Debug.Log("Track Mean: " + VectorUtilities.Resize(gt.gaussianVector.mean,3));
+                    Debug.Log("Track Covariance: " + VectorUtilities.Resize(gt.gaussianVector.covariance,3,3));
+                    
                     // Only consider those that have chi square distances below threshold
                     double tempChiSquareDistance = Compute3DimChiSquareDistance(gm, gt);
+
+                    Debug.Log("Chi Square Score: " + tempChiSquareDistance);
                     if (tempChiSquareDistance <= chiSquareThreshold)
                     {
                         // Keep track of best match
@@ -78,33 +89,26 @@ namespace AutonomyTestbed.Fusion
         private double Compute3DimChiSquareDistance(GaussianMeasurement measurement, GaussianTrack track)
         {
             // Coast track to measurement time using state transition model
-            GaussianVector coastedTrack6 = track.CoastTrack(fusionEngine.stateTransitionModel, measurement.dateTime);
+            GaussianVector coastedTrack = track.CoastTrack(fusionEngine.stateTransitionModel, measurement.dateTime);
 
-            // Only take 3 dimensional subset of coasted track
-            Vector mean3 = new Vector(3);
-            Matrix covariance3 = new Matrix(3,3);
-            for(int i=0; i < 3; i++){
-                mean3[i] = coastedTrack6.mean[i];
-                for(int j=0; j < 3; j++){
-                    covariance3[i,j] = coastedTrack6.covariance[i,j];
-                }
-            }
-            GaussianVector coastedTrack3 = new GaussianVector(mean3, covariance3);
+            // Only take 3 dimensional components of coasted track
+            Vector coastedMean = VectorUtilities.Resize(coastedTrack.mean,3);
+            Matrix coastedCovariance = VectorUtilities.Resize(coastedTrack.covariance,3,3);
 
             // Convert measurement to UNITY (track) 3 dimensional coordinates
             Vector convMeasurementMean;
             Matrix convMeasurementJacobian;
             Coordinate.Convert(measurement.creatorUnityReference, measurement.coordinateType, measurement.gaussianVector.mean,
-                new Vector(3), Coordinate.Type.UNITY, out convMeasurementMean, out convMeasurementJacobian);
+                new Vector(3), Coordinate.Type.UNITY3, out convMeasurementMean, out convMeasurementJacobian);
             Matrix convMeasurementJacobianT = convMeasurementJacobian.Clone();
             convMeasurementJacobianT.Transpose();
             Matrix convMeasurementCovariance = convMeasurementJacobian * measurement.gaussianVector.covariance * convMeasurementJacobianT;
 
             // Compute 3 dimensional chi-square metric 
-            Matrix meanDisplacement = (coastedTrack3.mean - convMeasurementMean).ToColumnMatrix();
+            Matrix meanDisplacement = (coastedMean - convMeasurementMean).ToColumnMatrix();
             Matrix meanDisplacementT = meanDisplacement.Clone();
             meanDisplacementT.Transpose();
-            return (meanDisplacementT*((coastedTrack3.covariance + convMeasurementCovariance).Solve(meanDisplacement)))[0,0];
+            return (meanDisplacementT*((coastedCovariance + convMeasurementCovariance).Solve(meanDisplacement)))[0,0];
         }
     }
 }

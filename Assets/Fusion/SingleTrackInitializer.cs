@@ -15,7 +15,7 @@ namespace AutonomyTestbed.Fusion
         public SingleTrackInitializer(FusionEngine fusionEngine)
         {
             this.fusionEngine = fusionEngine;
-            this.batchEstimator = new WLSQBatchEstimator(3, fusionEngine);
+            this.batchEstimator = new WLSQBatchEstimator(5, fusionEngine);
         }
 
         // Tries to initialize tracks

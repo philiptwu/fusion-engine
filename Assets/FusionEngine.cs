@@ -49,7 +49,7 @@ public class FusionEngine : MonoBehaviour {
 
         // Initialize models
         stateTransitionModel = new ConstantVelocityModel();
-        processNoiseModel = new RandomAccelerationModel(2.0f);
+        processNoiseModel = new RandomAccelerationModel(10);
 
         // Initialize components
         associator = new ChiSquareAssociator(this);

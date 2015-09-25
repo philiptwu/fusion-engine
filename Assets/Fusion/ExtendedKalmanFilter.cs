@@ -39,13 +39,11 @@ namespace AutonomyTestbed.Fusion
             HT.Transpose();
             Matrix S = H * predictedGaussianVector.covariance * HT + measurement.gaussianVector.covariance;
             Matrix K = S.SolveTranspose(predictedGaussianVector.covariance * HT);
+            K.Transpose();
+            //Matrix K = (predictedGaussianVector.covariance * HT)*S.Inverse();
 
             // Update state estimate
             int N = predictedGaussianVector.mean.Length;
-            //Debug.Log("K = (" + K.RowCount + "," + K.ColumnCount + ")");
-            //Debug.Log("H = (" + H.RowCount + "," + H.ColumnCount + ")");
-            //Debug.Log("I-KH = (" + (Matrix.Identity(N, N) - K * H).RowCount + "," + (Matrix.Identity(N, N) - K * H).ColumnCount + ")");
-            //Debug.Log("P = (" + predictedGaussianVector.covariance.RowCount + "," + predictedGaussianVector.covariance.ColumnCount + ")");
             predictedGaussianVector.covariance = (Matrix.Identity(N,N) - K*H) * predictedGaussianVector.covariance; // Problem
             predictedGaussianVector.mean = predictedGaussianVector.mean + (K * y.ToColumnMatrix()).GetColumnVector(0);
 
