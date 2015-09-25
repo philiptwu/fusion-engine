@@ -8,9 +8,9 @@ namespace AutonomyTestbed.Fusion
 {
     public static class EnuToUnity
     {
-        public static Vector ConvertVector(Vector enu, Vector unityReference)
+        public static Vector ConvertVector(Vector enu, Vector unityReference, int numDims)
         {
-            if (enu.Length == 3)
+            if (numDims == 3)
             {
                 Vector unity = new Vector(3);
                 unity[0] = enu[0] + unityReference[0];
@@ -18,7 +18,7 @@ namespace AutonomyTestbed.Fusion
                 unity[2] = enu[1] + unityReference[2]; // Purposely swapped 1 and 2 on ENU
                 return unity;
             }
-            else if (enu.Length == 6)
+            else if (numDims == 6)
             {
                 Vector unity = new Vector(6);
                 unity[0] = enu[0] + unityReference[0];
@@ -41,9 +41,9 @@ namespace AutonomyTestbed.Fusion
             }
         }
 
-        public static Matrix ComputeJacobian(Vector enu)
+        public static Matrix ComputeJacobian(Vector enu, int numDims)
         {
-            if (enu.Length == 3)
+            if (numDims == 3)
             {
                 // Create and return
                 Matrix J = new Matrix(3, 3, 0);
@@ -52,7 +52,7 @@ namespace AutonomyTestbed.Fusion
                 J[2, 1] = 1;
                 return J;
             }
-            else if (enu.Length == 6)
+            else if (numDims == 6)
             {
                 Matrix J = new Matrix(6, 6, 0);
                 J[0, 0] = 1;

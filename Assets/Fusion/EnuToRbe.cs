@@ -8,9 +8,9 @@ namespace AutonomyTestbed.Fusion
 {
     public static class EnuToRbe
     {
-        public static Vector ConvertVector(Vector enu)
+        public static Vector ConvertVector(Vector enu, int numDims)
         {
-            if (enu.Length == 3)
+            if (numDims == 3)
             {
                 // Extract
                 double e = enu[0];
@@ -31,7 +31,7 @@ namespace AutonomyTestbed.Fusion
                 rbe[2] = (float)Math.Atan2(u, gr);
                 return rbe;
             }
-            else if (enu.Length == 6)
+            else if (numDims == 6)
             {
                 // Extract
                 double e = enu[0];
@@ -70,9 +70,9 @@ namespace AutonomyTestbed.Fusion
             }
         }
 
-        public static Matrix ComputeJacobian(Vector enu)
+        public static Matrix ComputeJacobian(Vector enu, int numDims)
         {
-            if (enu.Length == 3)
+            if (numDims == 3)
             {
                 // Extract
                 double e = enu[0];
@@ -103,7 +103,7 @@ namespace AutonomyTestbed.Fusion
                 J[2, 2] = gr / r2;
                 return J;
             }
-            else if (enu.Length == 6)
+            else if (numDims == 6)
             {
                 // Extract
                 double e = enu[0];

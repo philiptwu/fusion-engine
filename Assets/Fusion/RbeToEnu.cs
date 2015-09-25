@@ -8,9 +8,9 @@ namespace AutonomyTestbed.Fusion
 {
     public static class RbeToEnu
     {
-        public static Vector ConvertVector(Vector rbe)
+        public static Vector ConvertVector(Vector rbe, int numDims)
         {
-            if (rbe.Length == 3)
+            if (numDims == 3)
             {
                 // Extract
                 double r = rbe[0];
@@ -30,7 +30,7 @@ namespace AutonomyTestbed.Fusion
                 enu[2] = r * sine;
                 return enu;
             }
-            else if (rbe.Length == 6)
+            else if (numDims == 6)
             {
                 // Extract
                 double r = rbe[0];
@@ -68,9 +68,9 @@ namespace AutonomyTestbed.Fusion
             }
         }
 
-        public static Matrix ComputeJacobian(Vector rbe)
+        public static Matrix ComputeJacobian(Vector rbe, int numDims)
         {
-            if (rbe.Length == 3)
+            if (numDims == 3)
             {
                 // Extract
                 double r = rbe[0];
@@ -98,7 +98,7 @@ namespace AutonomyTestbed.Fusion
                 J[2, 2] = r * cose;
                 return J;
             }
-            else if (rbe.Length == 6)
+            else if (numDims == 6)
             {
                 // Extract
                 double r = rbe[0];
