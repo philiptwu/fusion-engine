@@ -12,13 +12,13 @@ namespace AutonomyTestbed.Fusion
     public class WLSQBatchEstimator
     {
         // Internal
-        private int minMeasurements;
+        private int minBatchMeasurements;
         private FusionEngine fusionEngine;
 
         // Constructor
-        public WLSQBatchEstimator(int minMeasurements, FusionEngine fusionEngine)
+        public WLSQBatchEstimator(int minBatchMeasurements, FusionEngine fusionEngine)
         {
-            this.minMeasurements = minMeasurements;
+            this.minBatchMeasurements = minBatchMeasurements;
             this.fusionEngine = fusionEngine;
         }
 
@@ -29,7 +29,7 @@ namespace AutonomyTestbed.Fusion
             int N = measurements.Count;
 
             // Check if we have sufficient samples to estimate
-            if (N < minMeasurements)
+            if (N < minBatchMeasurements)
             {
                 return null;
             }

@@ -12,10 +12,10 @@ namespace AutonomyTestbed.Fusion
         private FusionEngine fusionEngine;
         private WLSQBatchEstimator batchEstimator;
 
-        public SingleTrackInitializer(FusionEngine fusionEngine)
+        public SingleTrackInitializer(FusionEngine fusionEngine, int minBatchMeasurements)
         {
             this.fusionEngine = fusionEngine;
-            this.batchEstimator = new WLSQBatchEstimator(5, fusionEngine);
+            this.batchEstimator = new WLSQBatchEstimator(minBatchMeasurements, fusionEngine);
         }
 
         // Tries to initialize tracks

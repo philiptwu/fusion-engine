@@ -10,7 +10,7 @@ namespace AutonomyTestbed.Fusion
     public class ChiSquareAssociator
     {
         // Threshold
-        public float chiSquareThreshold;
+        private float chiSquareThreshold;
 
         // Pointers
         private FusionEngine fusionEngine;
@@ -19,16 +19,11 @@ namespace AutonomyTestbed.Fusion
         //private List<GaussianTrack> protoTrackList;
 
         // Constructor
-        public ChiSquareAssociator(FusionEngine fusionEngine)
+        public ChiSquareAssociator(FusionEngine fusionEngine, float chiSquareThreshold)
         {
-            // Threshold
-            //chiSquareThreshold =  7.8147f; // for chi2inv(0.95,3)
-            //chiSquareThreshold = 11.3449f; // for chi2inv(0.99,3)
-            chiSquareThreshold = 16.2662f; // for chi2inv(0.999,3)
-            //chiSquareThreshold = 21.1075f; // for chi2inv(0.9999,3)
-
             // Save pointer to the fusion engine
             this.fusionEngine = fusionEngine;
+            this.chiSquareThreshold = chiSquareThreshold;
 
             // Initialize internal storage
             //protoTrackList = new List<GaussianTrack>();
@@ -40,9 +35,6 @@ namespace AutonomyTestbed.Fusion
             // Copy from unprocessed measurements to unassociated and clear list
             foreach (GaussianMeasurement gm in fusionEngine.unprocessedMeasurements)
             {
-                Debug.Log("Measurement Mean: " + gm.gaussianVector.mean);
-                Debug.Log("Measurement Covar: " + gm.gaussianVector.covariance);
-
                 // Only take those that are gaussian measurements
                 GaussianTrack bestTrack = null;
                 double lowestChiSquareDistance = double.PositiveInfinity;
@@ -50,13 +42,8 @@ namespace AutonomyTestbed.Fusion
                 // Try to associate to a track
                 foreach(GaussianTrack gt in fusionEngine.trackDatabase.Values)
                 {
-                    Debug.Log("Track Mean: " + VectorUtilities.Resize(gt.gaussianVector.mean,3));
-                    Debug.Log("Track Covariance: " + VectorUtilities.Resize(gt.gaussianVector.covariance,3,3));
-                    
                     // Only consider those that have chi square distances below threshold
                     double tempChiSquareDistance = Compute3DimChiSquareDistance(gm, gt);
-
-                    Debug.Log("Chi Square Score: " + tempChiSquareDistance);
                     if (tempChiSquareDistance <= chiSquareThreshold)
                     {
                         // Keep track of best match

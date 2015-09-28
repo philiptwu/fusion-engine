@@ -49,11 +49,11 @@ public class FusionEngine : MonoBehaviour {
 
         // Initialize models
         stateTransitionModel = new ConstantVelocityModel();
-        processNoiseModel = new RandomAccelerationModel(10);
+        processNoiseModel = new RandomAccelerationModel(2);
 
         // Initialize components
-        associator = new ChiSquareAssociator(this);
-        initializer = new SingleTrackInitializer(this);
+        associator = new ChiSquareAssociator(this, 16.2662f);
+        initializer = new SingleTrackInitializer(this, 5);
         ekf = new ExtendedKalmanFilter(stateTransitionModel, processNoiseModel);
                 
         // Reset time since last update
@@ -100,7 +100,6 @@ public class FusionEngine : MonoBehaviour {
                 timeSinceLastUpdateSec = 0.0f;
 
                 Debug.Log("******************************");
-                Debug.Log("Unprocessed Measurements: " + unprocessedMeasurements.Count);
                 Debug.Log("Unassociated Measurements: " + unassociatedMeasurements.Count);
                 Debug.Log("Tracks: " + trackDatabase.Values.Count);
             }

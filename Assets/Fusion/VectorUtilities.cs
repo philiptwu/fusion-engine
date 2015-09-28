@@ -36,7 +36,7 @@ namespace AutonomyTestbed.Fusion
             int minNumCols = (desiredNumCols < m.ColumnCount) ? desiredNumCols : m.ColumnCount;
             for (int i = 0; i < minNumRows; i++)
             {
-                for (int j = 0; i < minNumCols; i++)
+                for (int j = 0; j < minNumCols; j++)
                 {
                     y[i,j] = m[i,j];
                 }

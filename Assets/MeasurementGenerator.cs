@@ -26,9 +26,9 @@ public class MeasurementGenerator : MonoBehaviour {
         // Noise distribution
         nd = new NormalDistribution(0, 1);
         noiseCovariance = new Matrix(3, 3);
-        noiseCovariance[0, 0] = 1e-6;
-        noiseCovariance[1, 1] = 1e-6;
-        noiseCovariance[2, 2] = 1e-6;
+        noiseCovariance[0, 0] = 1e-3;
+        noiseCovariance[1, 1] = 1e-3;
+        noiseCovariance[2, 2] = 1e-3;
 
         noiseCovCholT = noiseCovariance.CholeskyDecomposition.TriangularFactor.Clone();
         noiseCovCholT.Transpose();
