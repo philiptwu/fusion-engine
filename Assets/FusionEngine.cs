@@ -12,15 +12,10 @@ using MathNet.Numerics.LinearAlgebra;
 // 5. Generalize
 
 public class FusionEngine : MonoBehaviour {
-
-    // Engine properties
-    public float updatePeriodSec;
-    private float timeSinceLastUpdateSec;
-
     // Databases
-    public List<GaussianMeasurement> unprocessedMeasurements;
-    public List<GaussianMeasurement> unassociatedMeasurements;
-    public Dictionary<ulong, GaussianTrack> trackDatabase;
+    public Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>> unprocessedMeasurements;
+    public Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>> unassociatedMeasurements;
+    public List<GaussianTrack> trackDatabase;
     
     // Track ID bookkeeping
     private HashSet<ulong> usedTrackIDs;
@@ -39,9 +34,9 @@ public class FusionEngine : MonoBehaviour {
 	void Start () 
     {
         // Initialize databases
-        unprocessedMeasurements = new List<GaussianMeasurement>();
-        unassociatedMeasurements = new List<GaussianMeasurement>();
-        trackDatabase = new Dictionary<ulong, GaussianTrack>();
+        unprocessedMeasurements = new Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>>(); // platformID, sensorID, meas
+        unassociatedMeasurements = new Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>>(); // platformID, sensorID, meas
+        trackDatabase = new List<GaussianTrack>();
 
         // Initialize track ID bookkeeping
         usedTrackIDs = new HashSet<ulong>();
@@ -54,67 +49,94 @@ public class FusionEngine : MonoBehaviour {
         // Initialize components
         associator = new ChiSquareAssociator(this, 16.2662f);
         initializer = new SingleTrackInitializer(this, 5);
-        ekf = new ExtendedKalmanFilter(stateTransitionModel, processNoiseModel);
-                
-        // Reset time since last update
-        timeSinceLastUpdateSec = 0.0f;
+        ekf = new ExtendedKalmanFilter(stateTransitionModel, processNoiseModel);                
 	}
 	
 	// Update is called once per frame
 	void Update () 
     {
-	    // Check if it is time to perform an udpate
-        timeSinceLastUpdateSec += Time.deltaTime;
-        if (timeSinceLastUpdateSec >= updatePeriodSec)
-        {
-            // Grab lock on track database
-            lock (trackDatabase)
-            {
-                lock (unassociatedMeasurements)
-                {
-                    // Step 1: Try to associate measurements to released tracks
-                    lock (unprocessedMeasurements)
-                    {
-                        associator.Associate();
-                    }
-
-                    // Step 2: Use unassociated measurements to try to update proto tracks
-                    initializer.InitializeTracks();
-                }
-                // Step 3: Run track management on each released track
-                // Note: This step can be omitted for now
-
-                // Step 4: Run filter on each released track
-                foreach (GaussianTrack gt in trackDatabase.Values)
-                {
-                    // Note: Associated measurements are in sorted list so update is 
-                    // being performed in chronological order
-                    foreach (GaussianMeasurement gm in gt.associatedMeasurements.Values)
-                    {
-                        ekf.UpdateTrack(gt, gm);
-                    }
-                    gt.associatedMeasurements.Clear();
-                }
-
-                // Clear time since last update
-                timeSinceLastUpdateSec = 0.0f;
-
-                Debug.Log("******************************");
-                Debug.Log("Unassociated Measurements: " + unassociatedMeasurements.Count);
-                Debug.Log("Tracks: " + trackDatabase.Values.Count);
-            }
-        }
+        // Do nothing
 	}
+
+    // Engine update, called when new measurements are added
+    private void EngineUpdate()
+    {
+        // Grab lock on track database
+        lock (trackDatabase)
+        {
+            lock (unassociatedMeasurements)
+            {
+                // Step 1: Try to associate measurements to released tracks
+                lock (unprocessedMeasurements)
+                {
+                    associator.Associate();
+                }
+
+                // Step 2: Use unassociated measurements to try to update proto tracks
+                initializer.InitializeTracks();
+            }
+            // Step 3: Run track management on each released track
+            // Note: This step can be omitted for now
+
+            // Step 4: Run filter on each released track
+            foreach (GaussianTrack gt in trackDatabase.Values)
+            {
+                // Note: Associated measurements are in sorted list so update is 
+                // being performed in chronological order
+                foreach (GaussianMeasurement gm in gt.associatedMeasurements.Values)
+                {
+                    ekf.UpdateTrack(gt, gm);
+                }
+                gt.associatedMeasurements.Clear();
+            }
+
+            Debug.Log("******************************");
+            Debug.Log("Unassociated Measurements: " + unassociatedMeasurements.Count);
+            Debug.Log("Tracks: " + trackDatabase.Values.Count);
+        }
+    }
+
+    private void AddToTieredDictionary(Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>> d, GaussianMeasurement m)
+    {
+        // Create a new dictionary for this platform ID if one doesn't already exist
+        if (!d.ContainsKey(m.platformID))
+        {
+            d[m.platformID] = new Dictionary<uint, List<GaussianMeasurement>>();
+        }
+
+        // Create a new dictionary for this sensor ID if one doesn't already exist
+        if (!d[m.platformID].ContainsKey(m.sensorID))
+        {
+            d[m.platformID][m.sensorID] = new List<GaussianMeasurement>();
+        }
+
+        // Add to the appropriate list
+        d[m.platformID][m.sensorID].Add(m);
+    }
+
+    public void AddUnassociatedMeasurement(GaussianMeasurement m)
+    {
+        lock (unassociatedMeasurements)
+        {
+            AddToTieredDictionary(unassociatedMeasurements, m);
+        }
+    }
 
     // Used by external code to add to list of unprocessed measurements
     // Do not try to modify the list directly
-    public void AddMeasurement(GaussianMeasurement measurement)
+    public void AddScanMeasurements(List<GaussianMeasurement> measurements)
     {
         // Add to the list of unprocessed, can't add any when 
         lock (unprocessedMeasurements)
         {
-            unprocessedMeasurements.Add(measurement);
+            foreach (GaussianMeasurement m in measurements)
+            {
+                AddToTieredDictionary(unprocessedMeasurements, m);
+            }
         }
+
+        // Since new measurements have been added, update the engine as needed
+        EngineUpdate();
     }
 
     // Requests an available track ID
