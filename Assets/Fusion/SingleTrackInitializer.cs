@@ -14,6 +14,8 @@ namespace AutonomyTestbed.Fusion
 
         public SingleTrackInitializer(FusionEngine fusionEngine, int minBatchMeasurements)
         {
+            Debug.LogWarning("Warning: Track initialization not fully implemented yet, for now will try to put all unassociated measurements into a single track");
+
             this.fusionEngine = fusionEngine;
             this.batchEstimator = new WLSQBatchEstimator(minBatchMeasurements, fusionEngine);
         }
@@ -28,7 +30,7 @@ namespace AutonomyTestbed.Fusion
             if (newTrack != null)
             {
                 fusionEngine.unassociatedMeasurements.Clear();
-                fusionEngine.trackDatabase.Add(newTrack.trackID, newTrack);
+                fusionEngine.trackDatabase.Add(newTrack);
             }
         }
     }

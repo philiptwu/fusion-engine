@@ -14,8 +14,10 @@ using MathNet.Numerics.LinearAlgebra;
 public class FusionEngine : MonoBehaviour {
     // Databases
     public Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>> unprocessedMeasurements;
-    public Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>> unassociatedMeasurements;
+    //public Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>> unassociatedMeasurements;
+    public List<GaussianMeasurement> unassociatedMeasurements;
     public List<GaussianTrack> trackDatabase;
+    public List<GaussianTrack> protoTrackDatabase;
     
     // Track ID bookkeeping
     private HashSet<ulong> usedTrackIDs;
@@ -35,8 +37,10 @@ public class FusionEngine : MonoBehaviour {
     {
         // Initialize databases
         unprocessedMeasurements = new Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>>(); // platformID, sensorID, meas
-        unassociatedMeasurements = new Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>>(); // platformID, sensorID, meas
+        //unassociatedMeasurements = new Dictionary<uint, Dictionary<uint, List<GaussianMeasurement>>>(); // platformID, sensorID, meas
+        unassociatedMeasurements = new List<GaussianMeasurement>();
         trackDatabase = new List<GaussianTrack>();
+        protoTrackDatabase = new List<GaussianTrack>();
 
         // Initialize track ID bookkeeping
         usedTrackIDs = new HashSet<ulong>();
@@ -79,7 +83,7 @@ public class FusionEngine : MonoBehaviour {
             // Note: This step can be omitted for now
 
             // Step 4: Run filter on each released track
-            foreach (GaussianTrack gt in trackDatabase.Values)
+            foreach (GaussianTrack gt in trackDatabase)
             {
                 // Note: Associated measurements are in sorted list so update is 
                 // being performed in chronological order
@@ -88,11 +92,13 @@ public class FusionEngine : MonoBehaviour {
                     ekf.UpdateTrack(gt, gm);
                 }
                 gt.associatedMeasurements.Clear();
+
+                Debug.Log("Track #" + gt.trackID + " mean: " + gt.gaussianVector.mean);
             }
 
             Debug.Log("******************************");
             Debug.Log("Unassociated Measurements: " + unassociatedMeasurements.Count);
-            Debug.Log("Tracks: " + trackDatabase.Values.Count);
+            Debug.Log("Tracks: " + trackDatabase.Count);
         }
     }
 
@@ -118,7 +124,7 @@ public class FusionEngine : MonoBehaviour {
     {
         lock (unassociatedMeasurements)
         {
-            AddToTieredDictionary(unassociatedMeasurements, m);
+            unassociatedMeasurements.Add(m);
         }
     }
 

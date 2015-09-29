@@ -1,16 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using AutonomyTestbed.Fusion;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.Distributions;
 
 public class MeasurementGenerator : MonoBehaviour {    
     private FusionEngine fusionEngine;
-    private GameObject target;
+    private GameObject[] targets;
     private Matrix noiseCovariance;
     private Matrix noiseCovCholT;
     private NormalDistribution nd;
-
     public float updatePeriodSec;
     private float timeSinceLastUpdateSec;
 
@@ -21,7 +21,7 @@ public class MeasurementGenerator : MonoBehaviour {
         fusionEngine = GetComponentInParent<FusionEngine>();
 
         // Get a pointer to the target
-        target = GameObject.FindGameObjectWithTag("Target");
+        targets = GameObject.FindGameObjectsWithTag("Target");
 
         // Noise distribution
         nd = new NormalDistribution(0, 1);
@@ -53,24 +53,32 @@ public class MeasurementGenerator : MonoBehaviour {
             ownshipPosUnity[4] = 0;
             ownshipPosUnity[5] = 0;
 
-            // Get target position
-            Vector targetPosUnity = GetUnityPosition(target);
+            // New scan
+            List<GaussianMeasurement> ms = new List<GaussianMeasurement>();
+            
+            // Take a noisy measurement of each target
+            for (int i = 0; i < targets.Length; i++)
+            {
+                // Get target position
+                Vector targetPosUnity = GetUnityPosition(targets[i]);
 
-            // Generate gaussian noise
-            Vector gaussianNoise = new Vector(3);
-            gaussianNoise[0] = nd.NextDouble();
-            gaussianNoise[1] = nd.NextDouble();
-            gaussianNoise[2] = nd.NextDouble();
-            gaussianNoise = (noiseCovCholT * gaussianNoise.ToColumnMatrix()).GetColumnVector(0);
+                // Generate gaussian noise
+                Vector gaussianNoise = new Vector(3);
+                gaussianNoise[0] = nd.NextDouble();
+                gaussianNoise[1] = nd.NextDouble();
+                gaussianNoise[2] = nd.NextDouble();
+                gaussianNoise = (noiseCovCholT * gaussianNoise.ToColumnMatrix()).GetColumnVector(0);
 
-            // Generate measurement
-            GaussianMeasurement m = new GaussianMeasurement(ownshipPosUnity,
-                new GaussianVector(targetPosUnity + gaussianNoise, noiseCovariance),
-                Coordinate.Type.UNITY3,
-                System.DateTime.Now);
+                // Generate measurement
+                GaussianMeasurement m = new GaussianMeasurement(1, 1, ownshipPosUnity,
+                    new GaussianVector(targetPosUnity + gaussianNoise, noiseCovariance),
+                    Coordinate.Type.UNITY3,
+                    System.DateTime.Now);
+                ms.Add(m);
+            }
 
             // Add to fusion engine to be processed
-            fusionEngine.AddMeasurement(m);
+            fusionEngine.AddScanMeasurements(ms);
 
             // Clear time since last update
             timeSinceLastUpdateSec = 0.0f;

@@ -11,7 +11,6 @@ namespace AutonomyTestbed.Fusion
         // Identification
         public readonly uint platformID;
         public readonly uint sensorID;
-        public readonly ulong scanNumber;
 
         // Creator location
         public readonly Vector creatorUnityReference;
@@ -22,13 +21,12 @@ namespace AutonomyTestbed.Fusion
         public readonly DateTime dateTime;
 
         // Constructor
-        public GaussianMeasurement(uint platformID, uint sensorID, ulong scanNumber, 
+        public GaussianMeasurement(uint platformID, uint sensorID, 
             Vector creatorUnityReference, GaussianVector gaussianVector, 
             Coordinate.Type coordinateType, DateTime dateTime)
         {
             this.platformID = platformID;
             this.sensorID = sensorID;
-            this.scanNumber = scanNumber;
             this.creatorUnityReference = creatorUnityReference.Clone();
             this.gaussianVector = gaussianVector.Clone();
             this.coordinateType = coordinateType;
